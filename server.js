@@ -28,8 +28,10 @@ await connectDB();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-      origin: '*', 
-      methods: ["GET", "POST"]
+      origin: 'https://lionfish-app-vyx4z.ondigitalocean.app/', 
+      methods: ["GET", "POST"],
+    credentials: true
+    
   }
 });
 
