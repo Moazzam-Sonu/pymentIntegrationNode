@@ -53,7 +53,7 @@ io.on('connection', (socket) => {
 app.get('/confirm-payment/:productId', async (req, res) => {
   const { productId } = req.params;
 //   console.log('product id', productId);
-  const nextBillingDate = new Date(Date.now() + 2 * 60 * 1000);
+  const nextBillingDate = new Date(Date.now() + 5.1 * 60 * 1000);
   try {
         await Product.updateOne({ _id: productId }, { $set: { nextBillingDate: nextBillingDate } });
         res.status(200).send({ success: true });
@@ -114,28 +114,6 @@ app.post('/create-payment-intent', async (req, res) => {
     }
 });
 
-// app.get('/customer/:customerId', async (req, res) => {
-//     const { customerId } = req.params;
-
-//     try {
-//         const response = await axios.get(
-//             `https://api.bigcommerce.com/stores/${process.env.STORE_HASH}/v2/customers/${customerId}`,
-//             {
-//                 headers: {
-//                     'X-Auth-Token': process.env.X_AUTH_TOKEN,
-//                     'Accept': 'application/json',
-//                     'Content-Type': 'application/json',
-//                 },
-//             }
-//         );
-
-//         res.status(201).send(response.data);
-//     } catch (error) {
-//         console.error('Error fetching customer data:', error.response ? error.response.data : error.message);
-//         res.status(500).json({ error: 'Failed to fetch customer data' });
-//     }
-// });
-
 app.get('/cart/:cartId', async (req, res) => {
     const { cartId } = req.params;
 
@@ -179,34 +157,6 @@ app.get('/customer/:customerId/address', async (req, res) => {
     }
 });
 
-// app.post('/products', async (req, res) => {
-//     const { productIds } = req.body;
-
-//     if (!Array.isArray(productIds) || productIds.length === 0) {
-//         return res.status(400).json({ error: 'Product IDs must be a non-empty array' });
-//     }
-
-//     const productIdsQuery = `id:in=${productIds.join(',')}`;
-
-//     try {
-//         const response = await axios.get(
-//             `https://api.bigcommerce.com/stores/${process.env.STORE_HASH}/v3/catalog/products?${productIdsQuery}`,
-//             {
-//                 headers: {
-//                     'X-Auth-Token': process.env.X_AUTH_TOKEN,
-//                     'Accept': 'application/json',
-//                     'Content-Type': 'application/json',
-//                 },
-//             }
-//         );
-
-//         res.status(200).send(response.data);
-//     } catch (error) {
-//         console.error('Error fetching product data:', error.response ? error.response.data : error.message);
-//         res.status(500).json({ error: 'Failed to fetch product data' });
-//     }
-// });
-
 app.post('/create-order', async (req, res) => {
     const orderData = req.body;
     try {
@@ -234,12 +184,10 @@ app.post('/save-products', async (req, res) => {
     try {
       const products = req.body.products;
   
-      // Validate the products array
       if (!Array.isArray(products) || products.length === 0) {
         return res.status(400).json({ message: 'Products array is invalid or empty' });
       }
   
-      // Insert multiple products into the database
       const savedProducts = await Product.insertMany(products);
   
       res.status(201).json({
@@ -252,9 +200,9 @@ app.post('/save-products', async (req, res) => {
     }
   });
 
-// Start the server and socket.io
+// Start the server
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
-
+//start the socket
 startPaymentCron(io);

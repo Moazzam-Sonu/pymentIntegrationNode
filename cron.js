@@ -10,10 +10,9 @@ dotenv.config();
 const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 
 export const startPaymentCron = (io) => {
-    cron.schedule('* * * * *', async () => {  // Schedule the job to run every minute for testing
+    cron.schedule('*/5 * * * *', async () => {
         console.log('Cron job started - Processing payments for due subscriptions');
         try {
-            // Find all products with an active subscription and a next billing date due
             const products = await Product.find({
                 subscription: true,
                 nextBillingDate: { $lte: new Date() }
@@ -28,9 +27,8 @@ export const startPaymentCron = (io) => {
                         continue;
                     }
 
-                    const totalAmount = product.amount * product.quantity * 100;  // Convert to cents
+                    const totalAmount = product.amount * product.quantity * 100;
 
-                    // Create payment intent for the product
                     let paymentIntent = await stripeClient.paymentIntents.create({
                         amount: totalAmount,
                         currency: 'usd',
@@ -41,13 +39,10 @@ export const startPaymentCron = (io) => {
                     });
 
                     console.log(`Payment intent with ID: ${paymentIntent.id} created successfully for product ID: ${product._id}`);
-
                     // Update nextBillingDate for the product
-                    product.nextBillingDate = new Date(Date.now() + 2 * 60 * 1000); // For testing;
+                    product.nextBillingDate = new Date(Date.now() + 5 * 60 * 1000); // For testing;
                    // order.nextBillingDate = new Date(order.nextBillingDate.setMonth(order.nextBillingDate.getMonth() + 1)); //exactly one month after
-
                     await product.save();
-
                     io.emit('paymentSuccess', { productId: product._id, message: 'Payment was successful.' });
                 } catch (paymentError) {
                     console.error(`Payment failed for product ID: ${product._id}`);
@@ -55,14 +50,15 @@ export const startPaymentCron = (io) => {
 
                     if (paymentError.code === 'authentication_required') {
                         console.error(`Action required for product ID: ${product._id}`);
-                        product.nextBillingDate = new Date();  // Optionally set to retry immediately
+                        product.nextBillingDate = new Date();
                         await product.save();
                         const paymentMethodId = paymentError.payment_intent.last_payment_error.payment_method.id;
                         const clientSecret = paymentError.payment_intent.client_secret;
                         io.emit('paymentActionRequired', { productId: product._id, clientSecret, paymentMethodId, message: 'Payment requires authentication.' });
                     } else {
                         console.error(`Marking product ID: ${product._id} as failed`);
-                        product.nextBillingDate = new Date();  // Optionally set to retry immediately
+                        product.nextBillingDate = new Date();
+                        product.subscription = false;
                         await product.save();
                         io.emit('paymentFailed', { productId: product._id, message: 'Payment failed. Please try again.' });
                     }
